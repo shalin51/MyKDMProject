@@ -3,23 +3,27 @@ import java.io.File
 
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.mllib.feature.{HashingTF, IDF, Word2Vec, Word2VecModel}
+import org.apache.spark.rdd.RDD
 
 import scala.collection.immutable.HashMap
 
 /**
   * Created by shalin on 6/26/2017.
-*/
+  */
 
 object TF_IDF {
-  def FindSynonyms(word: String, sparkContectObj: SparkContext): Array[(String,Double)] = {
+
+  def GetTFIDF(filePath: String, sparkContectObj: SparkContext): RDD[Seq[String]] = {
 
     //Reading the processed Text File to find synonyms
-    val processedFile = sparkContectObj.textFile("data/processedFile.txt")
+    val processedFile = sparkContectObj.textFile(filePath)
 
-    val wordSeq = processedFile.map(line => {
+    var wordSeq = processedFile.map(line => {
       val wordStrings = line.split(" ")
-      wordStrings.toSeq
+      val newWordStr=wordStrings++ NGramOperations.getNGramsFromSentance(line,2) ++  NGramOperations.getNGramsFromSentance(line,3)
+      newWordStr.toSeq
     })
+
 
     //HashingTF object creation
     val hashingTF = new HashingTF()
@@ -56,42 +60,36 @@ object TF_IDF {
     val mapp = sparkContectObj.broadcast(hmObj)
 
     val wordData = wordSeq.flatMap(_.toList)
-    val rddofWords = wordData.map(wrd => {
+    val rddOfWords = wordData.map(wrd => {
       Seq(wrd)
     })
-
-
-    //W2Vector
-    val modelPath = "data/W2V"
-
-
-    val modelFolder = new File(modelPath)
-    val wordToFind=word
-    if (modelFolder.exists()) {
-      val sameModel = Word2VecModel.load(sparkContectObj, modelPath)
-      val synonyms = sameModel.findSynonyms(wordToFind, 20)
-      return synonyms
-    }
-    else {
-      val word2vec = new Word2Vec().setVectorSize(1000)
-
-      val model = word2vec.fit(rddofWords)
-
-      val synonyms = model.findSynonyms(wordToFind, 20)
-
-      /*for ((synonym, cosineSimilarity) <- synonyms) {
-        println("synonym :" + s"$synonym $cosineSimilarity")
-      }
-      */
-      // Save and load model
-      model.save(sparkContectObj, modelPath)
-      return synonyms
-    }
-
+    return rddOfWords
   }
 
-}
+  def TrainModel(sparkContectObj: SparkContext, rddOfWords: RDD[Seq[String]]): Unit = {
+    //W2Vector
+    val modelPath = "data/W2V"
+    val modelFolder = new File(modelPath)
+    val word2vec = new Word2Vec().setVectorSize(5000)
+    val model = word2vec.fit(rddOfWords)
+    /*for ((synonym, cosineSimilarity) <- synonyms) {
+      println("synonym :" + s"$synonym $cosineSimilarity")
+    }
+    */
+    model.save(sparkContectObj, modelPath)
+  }
 
+
+  def FindSynonyms(word: String,sparkContectObj: SparkContext):Array[(String,Double)]= {
+    val modelPath = "data/W2V"
+    val modelFolder = new File(modelPath)
+    val wordToFind = word
+    val sameModel = Word2VecModel.load(sparkContectObj, modelPath)
+    val synonyms = sameModel.findSynonyms(wordToFind, 50)
+    println(synonyms(0), synonyms(1).toString())
+    return synonyms
+  }
+}
 
 
 

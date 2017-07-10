@@ -6,11 +6,15 @@ scalaVersion := "2.11.8"
 
 // spark 1.6.1 and satndfor Libaries 3.3.0
 
-libraryDependencies ++= Seq("edu.stanford.nlp" % "stanford-corenlp" % "3.3.0",
-  "edu.stanford.nlp" % "stanford-corenlp" % "3.3.0" classifier "models",
-  "edu.stanford.nlp" % "stanford-parser" % "3.3.0",
-  "org.apache.spark" %% "spark-mllib" % "1.6.1",
+libraryDependencies ++= Seq(
+  "org.apache.spark" %% "spark-core" % "1.6.0" % "provided",
+  "org.apache.spark" %% "spark-mllib" % "1.6.0",
+  "edu.stanford.nlp" % "stanford-corenlp" % "3.6.0",
+  "edu.stanford.nlp" % "stanford-corenlp" % "3.6.0" classifier "models",
+  "edu.stanford.nlp" % "stanford-parser" % "3.6.0",
   "com.google.protobuf" % "protobuf-java" % "2.6.1",
-  "org.apache.spark" %% "spark-core" % "1.6.1"
+  "org.apache.httpcomponents" % "httpcore" % "4.4.5",
+  "org.apache.httpcomponents" % "httpclient" % "4.5.2",
+  "com.googlecode.json-simple" % "json-simple" % "1.1.1",
+  "com.github.scopt" % "scopt_2.10" % "3.4.0"
 )
-
